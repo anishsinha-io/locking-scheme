@@ -133,9 +133,24 @@
               </li>
               <li>
                 Now the paths diverge
-
                 <ul>
-                  <li>If the entry was null:</li>
+                  <li>
+                    If the entry was null, then a new entry is created with this
+                    task being the only one in the queue. A thread begins to run
+                    which takes this task off the queue and checks if there are
+                    any more tasks to be done (if any had been assigned in the
+                    time the thread was busy working on the operation). If there
+                    are more tasks, the thread continues taking those tasks in
+                    order, and if not, the entry is converted back into a null
+                    entry, the thread is freed, and the lock is destroyed.
+                  </li>
+                  <li>
+                    If the entry was not null, the caller acquires a lock on the
+                    hash table and inserts an entry into the priority queue
+                    corresponding to that entry. It is taken off the queue,
+                    processed, and the results returned to the caller (if any
+                    results existed).
+                  </li>
                 </ul>
               </li>
             </ol>
