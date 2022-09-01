@@ -1,0 +1,147 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        box-sizing: border box;
+      }
+      code {
+        background-color: lightgray;
+        border-radius: 0.5rem;
+        padding: 0.1rem;
+      }
+      .main-container {
+        width: 67%;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 1rem;
+        border: 1px solid black;
+        font-family: "Times New Roman";
+        line-height: 1.8;
+        margin-top: 5rem;
+        margin-bottom: 5rem;
+      }
+
+      .main-container__heading {
+        text-align: center;
+      }
+
+      .locking-scheme {
+        width: 80%;
+        justify-self: center;
+        font-size: 1.2rem;
+      }
+
+      .list-img {
+        max-width: 100%;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <section class="main-container">
+      <div class="main-container__heading">
+        <h1>Locking Scheme Outline</h1>
+      </div>
+      <div class="locking-scheme">
+        <p>
+          &emsp;&emsp;The purpose of this locking scheme is to synchronize
+          access to certain locations on secondary storage, for example, a
+          portion of a file. The scheme for this project involves several data
+          structures, some of them thread safe, and the usage of several
+          synchronization primitives from the PTHREADS library as defined by the
+          POSIX standard. The data structures required are as follows:
+        </p>
+        <ul>
+          <li>
+            A priority queue. This priority queue is implemented as a binary
+            heap, which is one of the most effective ways to implement a
+            priority queue. This structure holds a queue of
+            <em>transactions</em>. Transactions are opaque data structures and
+            nothing should be assumed about them, except that each transaction
+            always has a timestamp field of type time_t (a standard UNIX
+            timestamp) from the LIBC header file <em>time.h</em>. The priority
+            queue makes sure that the order in which the transactions are placed
+            in is a minimum order, that is, the transactions are given higher
+            priority the lower their timestamp field is. This queue is
+            explicitly not thread safe, but it is protected by a wrapper data
+            structure which is thread safe.
+          </li>
+          <li>
+            A hash table. This hash table is implemented as an array of
+            linked-lists with separate chaining. The hash table depends on the C
+            library <em>primesieve.h</em> to generate prime numbers used to
+            initially size and also resize the table. This hash table is
+            protected by a mutual exclusion lock (mutex) of type
+            <code>pthread_mutex_t</code> from the <em>pthread.h</em> header.
+            file.
+            <img src="static/hashtable.png" alt="hashtable" class="list-img" />
+            There are three important parts of the diagram: the non-null
+            entries, the transactions, and the null entries. Each is explained
+            below:
+            <ul>
+              <li>
+                Transactions represent operations queued to the database. For
+                example, a search, insert, or delete. Although the transactions
+                appear to be linked together in a list, they are actually all in
+                a binary heap which, as mentioned above, serves as the priority
+                queue. The internal logic of the heap controls how transactions
+                are neatly removed in a way that resembles a linked list. As
+                stated above, the transactions are ordered by their unique UNIX
+                timestamp.
+              </li>
+              <li>
+                The non-null entries are keys in the hash table. Each non-null
+                entry contains the following (in this implementation). A mutex,
+                (represented by a <code>pthread_mutex_t</code> structure), a
+                pointer to a priority queue, and a thread which loops forever,
+                taking items off the queue, locking the mutex if needed,
+                performing the operation, and waiting for new operations. If
+                there is no operation in the queue, and the thread is idle, the
+                entry is destroyed and set to null.
+              </li>
+              <li>
+                The null entries represent an empty entry in the hash table. If
+                a page is hashed and that corresponds to an index at which there
+                is a null entry, a new non-null entry is created with all the
+                required elements as mentioned before (the thread, lock, heap,
+                etc.). When the thread running for that particular entry detects
+                that there is no more work to do, the entry is turned back into
+                a null entry for reuse later.
+              </li>
+            </ul>
+            The order of operations on the global hash table containing locks
+            (the lock table) is therefore the following:
+            <ol>
+              <li>
+                The hash table is initialized with no entries and a default size
+                of 613 (a prime number)
+              </li>
+              <li>
+                A task is created which requires the locking of a page on the
+                disk.
+              </li>
+              <li>
+                The page number and metadata of the page to be locked is hashed
+                into an integer modulus the size of the hash table.
+              </li>
+              <li>
+                Now the paths diverge
+
+                <ul>
+                  <li>If the entry was null:</li>
+                </ul>
+              </li>
+            </ol>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </body>
+</html>
