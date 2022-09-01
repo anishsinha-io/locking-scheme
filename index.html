@@ -78,9 +78,11 @@
             linked-lists with separate chaining. The hash table depends on the C
             library <em>primesieve.h</em> to generate prime numbers used to
             initially size and also resize the table. This hash table is
-            protected by a mutual exclusion lock (mutex) of type
-            <code>pthread_mutex_t</code> from the <em>pthread.h</em> header.
-            file.
+            protected by a mutual exclusion lock (mutex) which is represented by
+            a C structure which contains a mutex and a read/write lock, of types
+            <code>pthread_mutex_t</code> and
+            <code>pthread_rwlock_t</code> respectively from the
+            <em>pthread.h</em> header file.
             <img src="static/hashtable.png" alt="hashtable" class="list-img" />
             There are three important parts of the diagram: the non-null
             entries, the transactions, and the null entries. Each is explained
@@ -154,6 +156,26 @@
                 </ul>
               </li>
             </ol>
+          </li>
+        </ul>
+        The reasons this locking scheme works can be summarized in the following
+        points:
+        <ul>
+          <li>
+            In order to modify the hash table, the calling thread must acquire
+            exclusive access (a write lock). In order to read the hash table's
+            size, it must acquire a read lock. By the nature of how writers and
+            readers are blocked and serialized by the pthreads API, this ensures
+            that the information read is always consistent and when data is
+            written, it is done exclusively. This means that when a thread needs
+            to hash a page for an operation, it will always read the correct
+            size of the hash table. Once it calculates the index, it can upgrade
+            its read lock to a write lock and modify the table.
+          </li>
+          <li>
+            All transactions are well-ordered by timestamp, and this is thread
+            safe because to modify the queue of transactions, a write lock on
+            the table has to be acquired.
           </li>
         </ul>
       </div>
